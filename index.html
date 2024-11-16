@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Search and Routing</title>
+  <title>Leaflet Map with Search, Routing, and Extra Features</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -21,9 +21,28 @@
       margin: 0;
       height: 500px; /* Adjust height as needed */
     }
+    #controls {
+      margin: 10px;
+    }
+    .btn {
+      padding: 10px 15px;
+      margin: 5px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <button class="btn" id="removeMarkers">Remove All Markers</button>
+    <button class="btn" id="locateMe">Locate Me</button>
+  </div>
   <div id="map"></div>
   <script>
     // Initialize the map
@@ -34,6 +53,9 @@
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // Marker management
+    var markers = [];
 
     // Add a search bar using Leaflet Geocoder
     var geocoder = L.Control.geocoder({
@@ -48,9 +70,10 @@
         [bbox.getNorthEast().lat, bbox.getSouthWest().lng]
       ]);
       map.fitBounds(poly.getBounds());
-      L.marker(e.geocode.center).addTo(map)
+      var marker = L.marker(e.geocode.center).addTo(map)
         .bindPopup(e.geocode.name)
         .openPopup();
+      markers.push(marker); // Add marker to the list
     })
     .addTo(map);
 
@@ -70,6 +93,33 @@
         control.spliceWaypoints(0, 1, e.latlng); // Set as start point
       } else {
         control.spliceWaypoints(control.getWaypoints().length - 1, 1, e.latlng); // Set as end point
+      }
+    });
+
+    // Remove all markers button functionality
+    document.getElementById('removeMarkers').addEventListener('click', function() {
+      markers.forEach(function(marker) {
+        map.removeLayer(marker);
+      });
+      markers = []; // Clear the marker array
+    });
+
+    // Locate user button functionality
+    document.getElementById('locateMe').addEventListener('click', function() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          var lat = position.coords.latitude;
+          var lon = position.coords.longitude;
+          map.setView([lat, lon], 13);
+          var marker = L.marker([lat, lon]).addTo(map)
+            .bindPopup('You are here!')
+            .openPopup();
+          markers.push(marker); // Add marker to the list
+        }, function() {
+          alert('Unable to retrieve your location.');
+        });
+      } else {
+        alert('Geolocation is not supported by your browser.');
       }
     });
   </script>
