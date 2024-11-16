@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Search, Routing, and Extra Features</title>
+  <title>Leaflet Map with Search and Routing</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -21,32 +21,13 @@
       margin: 0;
       height: 500px; /* Adjust height as needed */
     }
-    #controls {
-      margin: 10px;
-    }
-    .btn {
-      padding: 10px 15px;
-      margin: 5px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background-color: #0056b3;
-    }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <button class="btn" id="removeMarkers">Remove All Markers</button>
-    <button class="btn" id="locateMe">Locate Me</button>
-  </div>
   <div id="map"></div>
   <script>
-    // Initialize the map
-    var map = L.map('map').setView([51.505, -0.09], 13); // Default location: London
+    // Initialize the map with a default location (London)
+    var map = L.map('map').setView([51.505, -0.09], 13);
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -54,14 +35,10 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Marker management
-    var markers = [];
-
     // Add a search bar using Leaflet Geocoder
     var geocoder = L.Control.geocoder({
       defaultMarkGeocode: false
-    })
-    .on('markgeocode', function(e) {
+    }).on('markgeocode', function(e) {
       var bbox = e.geocode.bbox;
       var poly = L.polygon([
         [bbox.getSouthWest().lat, bbox.getSouthWest().lng],
@@ -70,58 +47,34 @@
         [bbox.getNorthEast().lat, bbox.getSouthWest().lng]
       ]);
       map.fitBounds(poly.getBounds());
-      var marker = L.marker(e.geocode.center).addTo(map)
+      L.marker(e.geocode.center).addTo(map)
         .bindPopup(e.geocode.name)
         .openPopup();
-      markers.push(marker); // Add marker to the list
-    })
-    .addTo(map);
+    }).addTo(map);
 
-    // Add a routing control for directions
+    // Add a routing control for directions (with dynamic waypoints)
     var control = L.Routing.control({
       waypoints: [
         L.latLng(51.505, -0.09), // Default starting point
         L.latLng(51.515, -0.1)  // Default ending point
       ],
       routeWhileDragging: true,
-      geocoder: L.Control.Geocoder.nominatim()
+      geocoder: L.Control.Geocoder.nominatim(),
+      createMarker: function() { return null; } // Disable default markers
     }).addTo(map);
 
     // Add a click event to select start and end points dynamically
     map.on('click', function(e) {
-      if (control.getWaypoints()[0].latLng === null) {
+      var waypoints = control.getWaypoints();
+      if (!waypoints[0] || !waypoints[0].latLng) {
         control.spliceWaypoints(0, 1, e.latlng); // Set as start point
       } else {
-        control.spliceWaypoints(control.getWaypoints().length - 1, 1, e.latlng); // Set as end point
+        control.spliceWaypoints(waypoints.length - 1, 1, e.latlng); // Set as end point
       }
     });
 
-    // Remove all markers button functionality
-    document.getElementById('removeMarkers').addEventListener('click', function() {
-      markers.forEach(function(marker) {
-        map.removeLayer(marker);
-      });
-      markers = []; // Clear the marker array
-    });
-
-    // Locate user button functionality
-    document.getElementById('locateMe').addEventListener('click', function() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          var lat = position.coords.latitude;
-          var lon = position.coords.longitude;
-          map.setView([lat, lon], 13);
-          var marker = L.marker([lat, lon]).addTo(map)
-            .bindPopup('You are here!')
-            .openPopup();
-          markers.push(marker); // Add marker to the list
-        }, function() {
-          alert('Unable to retrieve your location.');
-        });
-      } else {
-        alert('Geolocation is not supported by your browser.');
-      }
-    });
+    // Add Geocoder to the map
+    map.addControl(geocoder);
   </script>
 </body>
 </html>
