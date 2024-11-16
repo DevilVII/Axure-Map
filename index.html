@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leaflet Map with Search, Routing, and Extra Features</title>
+  
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -14,36 +17,43 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
+  <!-- Font Awesome for Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  
   <style>
-    #map {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      height: 500px; /* Adjust height as needed */
-    }
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { height: 100%; }
     #controls {
-      margin: 10px;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
     }
     .btn {
-      padding: 10px 15px;
-      margin: 5px;
+      padding: 10px;
       background-color: #007bff;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      font-size: 20px;
+      margin: 5px;
     }
     .btn:hover {
       background-color: #0056b3;
+    }
+    .btn i {
+      font-size: 20px;
     }
   </style>
 </head>
 <body>
   <div id="controls">
-    <button class="btn" id="removeMarkers">Remove All Markers</button>
-    <button class="btn" id="locateMe">Locate Me</button>
+    <button class="btn" id="removeMarkers"><i class="fas fa-trash"></i></button>
+    <button class="btn" id="locateMe"><i class="fas fa-location-arrow"></i></button>
   </div>
   <div id="map"></div>
+
   <script>
     // Initialize the map
     var map = L.map('map').setView([51.505, -0.09], 13); // Default location: London
@@ -63,7 +73,7 @@
     })
     .on('markgeocode', function(e) {
       var bbox = e.geocode.bbox;
-      var poly = L.polygon([
+      var poly = L.polygon([ 
         [bbox.getSouthWest().lat, bbox.getSouthWest().lng],
         [bbox.getSouthWest().lat, bbox.getNorthEast().lng],
         [bbox.getNorthEast().lat, bbox.getNorthEast().lng],
