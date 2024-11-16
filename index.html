@@ -1,54 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leaflet Map with Geolocation and Route</title>
-
+  <title>Leaflet Map with Search and Routing</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Search Plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <!-- Leaflet Routing Plugin -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
-  <!-- Font Awesome for Icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
-    #map { height: 100%; }
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-    }
-    .btn {
-      padding: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 20px;
-      margin: 5px;
-    }
-    .btn:hover {
-      background-color: #0056b3;
-    }
-    .btn i {
-      font-size: 20px;
+    #map {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      height: 500px; /* Adjust height as needed */
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-
   <script>
-    // Initialize the map with a default view (does not have to be the user's location yet)
-    var map = L.map('map').setView([51.505, -0.09], 13); // Default view in case geolocation fails
+    // Initialize the map
+    var map = L.map('map').setView([51.505, -0.09], 13); // Default location: London
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -56,97 +35,43 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Add a routing control for directions (this will be populated with user's location once available)
+    // Add a search bar using Leaflet Geocoder
+    var geocoder = L.Control.geocoder({
+      defaultMarkGeocode: false
+    })
+    .on('markgeocode', function(e) {
+      var bbox = e.geocode.bbox;
+      var poly = L.polygon([
+        [bbox.getSouthWest().lat, bbox.getSouthWest().lng],
+        [bbox.getSouthWest().lat, bbox.getNorthEast().lng],
+        [bbox.getNorthEast().lat, bbox.getNorthEast().lng],
+        [bbox.getNorthEast().lat, bbox.getSouthWest().lng]
+      ]);
+      map.fitBounds(poly.getBounds());
+      L.marker(e.geocode.center).addTo(map)
+        .bindPopup(e.geocode.name)
+        .openPopup();
+    })
+    .addTo(map);
+
+    // Add a routing control for directions
     var control = L.Routing.control({
-      waypoints: [],
+      waypoints: [
+        L.latLng(51.505, -0.09), // Default starting point
+        L.latLng(51.515, -0.1)  // Default ending point
+      ],
       routeWhileDragging: true,
-      geocoder: L.Control.Geocoder.nominatim(),
-      createMarker: function() { return null; } // Disable markers on the route itself
+      geocoder: L.Control.Geocoder.nominatim()
     }).addTo(map);
 
-    // Function to update the user's location and trigger routing
-    function onLocationFound(position) {
-      var lat = position.latitude;
-      var lon = position.longitude;
-
-      map.setView([lat, lon], 13); // Move the map to the user's location
-      L.marker([lat, lon]).addTo(map)
-        .bindPopup('You are here!')
-        .openPopup();
-
-      // Set user's location as the start point of the route
-      var startLatLng = L.latLng(lat, lon);
-
-      // Define a default end point (or use a user-selected end point later)
-      var endLatLng = L.latLng(lat + 0.05, lon + 0.05); // For example, 0.05 degree offset
-
-      // Update the route with the new start and end points
-      control.setWaypoints([startLatLng, endLatLng]);
-
-      // Add stops along the route based on the current position
-      addStopsAlongRoute(startLatLng, endLatLng);
-    }
-
-    // Error handling if geolocation is denied or unavailable
-    function onLocationError(error) {
-      alert("Unable to retrieve your location: " + error.message);
-      // Fallback to default location if geolocation fails
-      map.setView([51.505, -0.09], 13);
-      L.marker([51.505, -0.09]).addTo(map)
-        .bindPopup('Default Location')
-        .openPopup();
-    }
-
-    // Function to add stops (hotels, gas stations) along the route
-    function addStopsAlongRoute(startLatLng, endLatLng) {
-      var query = `
-        [out:json];
-        (
-          node["amenity"="hotel"](around:1000,${startLatLng.lat},${startLatLng.lng});
-          node["amenity"="gas_station"](around:1000,${startLatLng.lat},${startLatLng.lng});
-        );
-        out body;
-      `;
-
-      var osmApiUrl = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
-
-      fetch(osmApiUrl)
-        .then(response => response.json())
-        .then(data => {
-          data.elements.forEach(function(element) {
-            var lat = element.lat;
-            var lon = element.lon;
-            var name = element.tags.name || 'Unknown place';
-            var type = element.tags.amenity;
-            var iconUrl = (type === 'hotel') ? 'https://upload.wikimedia.org/wikipedia/commons/4/49/Hotel_icon.svg' : 'https://upload.wikimedia.org/wikipedia/commons/d/d2/Gas_station_icon.svg';
-
-            // Add markers for each place
-            L.marker([lat, lon])
-              .addTo(map)
-              .bindPopup(`${name} (${type})`)
-              .setIcon(L.icon({ iconUrl: iconUrl, iconSize: [32, 32] }));
-          });
-        })
-        .catch(function(error) {
-          console.log('Error fetching stops:', error);
-        });
-    }
-
-    // Check if geolocation is supported and get the user's location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          onLocationFound({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        onLocationError // Error handling
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
-      onLocationError(); // Fallback
-    }
+    // Add a click event to select start and end points dynamically
+    map.on('click', function(e) {
+      if (control.getWaypoints()[0].latLng === null) {
+        control.spliceWaypoints(0, 1, e.latlng); // Set as start point
+      } else {
+        control.spliceWaypoints(control.getWaypoints().length - 1, 1, e.latlng); // Set as end point
+      }
+    });
   </script>
 </body>
 </html>
