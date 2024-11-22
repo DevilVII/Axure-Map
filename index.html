@@ -32,7 +32,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Custom marker icons
+    // Define custom icons
     var blueIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
       iconSize: [25, 41],
@@ -78,16 +78,19 @@
       geocoder: L.Control.Geocoder.nominatim(),
       createMarker: function(i, waypoint, n) {
         if (i === 0) {
+          // Start point
           return L.marker(waypoint.latLng, { icon: blueIcon }).bindPopup('Start');
         } else if (i === n - 1) {
+          // End point
           return L.marker(waypoint.latLng, { icon: greenIcon }).bindPopup('End');
         } else {
+          // Intermediate points
           return L.marker(waypoint.latLng).bindPopup('Waypoint');
         }
       }
     }).addTo(map);
 
-    // Allow click-to-set waypoints
+    // Enable click-to-set waypoints
     map.on('click', function(e) {
       var waypoints = control.getWaypoints();
       if (!waypoints[0] || !waypoints[0].latLng) {
@@ -96,9 +99,6 @@
         control.spliceWaypoints(waypoints.length - 1, 1, e.latlng); // Set as end point
       }
     });
-
-    // Add Geocoder to the map
-    map.addControl(geocoder);
   </script>
 </body>
 </html>
