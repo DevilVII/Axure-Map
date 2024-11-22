@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Colored Markers</title>
+  <title>Leaflet Map with Search and Routing</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
-  <!-- Leaflet Routing Machine -->
+  <!-- Leaflet Search Plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <!-- Leaflet Routing Plugin -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
@@ -26,6 +30,15 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add a search bar using Leaflet Geocoder
+    var geocoder = L.Control.geocoder({
+      defaultMarkGeocode: false
+    }).on('markgeocode', function(e) {
+      var latlng = e.geocode.center;
+      map.setView(latlng, 13);
+      L.marker(latlng).addTo(map).bindPopup(e.geocode.name).openPopup();
     }).addTo(map);
 
     // Define custom blue and green icons
@@ -67,6 +80,9 @@
         }
       }
     }).addTo(map);
+
+    // Ensure Geocoder works alongside Routing Machine
+    geocoder.addTo(map);
   </script>
 </body>
 </html>
