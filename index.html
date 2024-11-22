@@ -1,22 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Search and Routing</title>
+  <title>Leaflet Map with Colored Markers</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
-  <!-- Leaflet Search Plugin -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
-  <!-- Leaflet Routing Plugin -->
+  <!-- Leaflet Routing Machine -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
   <style>
     #map {
-      height: 500px; /* Adjust height as needed */
+      height: 500px;
     }
   </style>
 </head>
@@ -32,9 +28,9 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Custom markers for start and end points
+    // Define custom blue and green icons
     var blueIcon = L.icon({
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png', // Default marker icon in blue
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
@@ -43,30 +39,13 @@
     });
 
     var greenIcon = L.icon({
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-green.png', // Green marker
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
       shadowSize: [41, 41]
     });
-
-    // Add a search bar using Leaflet Geocoder
-    var geocoder = L.Control.geocoder({
-      defaultMarkGeocode: false
-    }).on('markgeocode', function(e) {
-      var bbox = e.geocode.bbox;
-      var poly = L.polygon([
-        [bbox.getSouthWest().lat, bbox.getSouthWest().lng],
-        [bbox.getSouthWest().lat, bbox.getNorthEast().lng],
-        [bbox.getNorthEast().lat, bbox.getNorthEast().lng],
-        [bbox.getNorthEast().lat, bbox.getSouthWest().lng]
-      ]);
-      map.fitBounds(poly.getBounds());
-      L.marker(e.geocode.center).addTo(map)
-        .bindPopup(e.geocode.name)
-        .openPopup();
-    }).addTo(map);
 
     // Add a routing control for directions
     var control = L.Routing.control({
@@ -75,34 +54,19 @@
         L.latLng(51.515, -0.1)  // Default ending point
       ],
       routeWhileDragging: true,
-      geocoder: L.Control.Geocoder.nominatim(),
       createMarker: function(i, waypoint, n) {
         if (i === 0) {
-          // Starting point (blue)
+          // Starting point
           return L.marker(waypoint.latLng, { icon: blueIcon }).bindPopup('Start');
         } else if (i === n - 1) {
-          // Ending point (green)
+          // Ending point
           return L.marker(waypoint.latLng, { icon: greenIcon }).bindPopup('End');
         } else {
-          // Waypoints in between (default marker)
+          // Intermediate points
           return L.marker(waypoint.latLng).bindPopup('Waypoint');
         }
       }
     }).addTo(map);
-
-    // Add a click event to dynamically select start and end points
-    map.on('click', function(e) {
-      var waypoints = control.getWaypoints();
-      if (!waypoints[0] || !waypoints[0].latLng) {
-        control.spliceWaypoints(0, 1, e.latlng); // Set as start point
-      } else {
-        control.spliceWaypoints(waypoints.length - 1, 1, e.latlng); // Set as end point
-      }
-    });
-
-    // Add Geocoder to the map
-    map.addControl(geocoder);
   </script>
 </body>
 </html>
-
