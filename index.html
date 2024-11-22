@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Routing and Search</title>
+  <title>Leaflet Map with Routing and Directions</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
-  <!-- Leaflet Geocoder Plugin -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
   <!-- Leaflet Routing Machine -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
+
+  <!-- Leaflet Geocoder -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <style>
     #map {
@@ -23,7 +23,7 @@
 <body>
   <div id="map"></div>
   <script>
-    // Initialize the map with a default location (London)
+    // Initialize the map centered on a default location
     var map = L.map('map').setView([51.505, -0.09], 13);
 
     // Add OpenStreetMap tiles
@@ -51,28 +51,37 @@
       shadowSize: [41, 41]
     });
 
-    // Add a routing control for directions
+    // Add the routing control
     var control = L.Routing.control({
       waypoints: [
         L.latLng(51.505, -0.09) // Default starting point (blue marker)
       ],
       routeWhileDragging: true,
       geocoder: L.Control.Geocoder.nominatim(),
+      showAlternatives: false, // Show one route at a time
+      lineOptions: {
+        styles: [{ color: 'red', weight: 5 }] // Red route line
+      },
       createMarker: function(i, waypoint, n) {
         if (i === 0) {
-          // Starting point
+          // Starting point (blue marker)
           return L.marker(waypoint.latLng, { icon: blueIcon }).bindPopup('Start');
         } else if (i === n - 1) {
-          // Ending point
+          // Ending point (green marker)
           return L.marker(waypoint.latLng, { icon: greenIcon }).bindPopup('End');
-        } else {
-          // Intermediate points
-          return L.marker(waypoint.latLng).bindPopup('Waypoint');
         }
       }
     }).addTo(map);
 
-    // Add a search bar to find places
+    // Show detailed turn-by-turn instructions
+    control.on('routesfound', function(e) {
+      var routes = e.routes;
+      var summary = routes[0].summary;
+      console.log('Distance:', summary.totalDistance / 1000, 'km');
+      console.log('Time:', summary.totalTime / 60, 'minutes');
+    });
+
+    // Add a search bar to the map
     L.Control.geocoder({
       defaultMarkGeocode: false
     }).on('markgeocode', function(e) {
@@ -84,9 +93,9 @@
     // Add click event to dynamically set the end point
     map.on('click', function(e) {
       var waypoints = control.getWaypoints();
-      if (!waypoints[1] || !waypoints[1].latLng) {
-        // Set as end point (green marker)
-        control.spliceWaypoints(waypoints.length, 0, e.latlng);
+      if (waypoints.length === 1 || !waypoints[1].latLng) {
+        // Add end point (green marker)
+        control.spliceWaypoints(1, 1, e.latlng);
       }
     });
   </script>
