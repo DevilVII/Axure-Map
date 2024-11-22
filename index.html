@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Dynamic Markers</title>
+  <title>Leaflet Map with Routing and Search</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Geocoder Plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <!-- Leaflet Routing Machine -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
@@ -49,8 +53,11 @@
 
     // Add a routing control for directions
     var control = L.Routing.control({
-      waypoints: [], // Start with no waypoints
+      waypoints: [
+        L.latLng(51.505, -0.09) // Default starting point (blue marker)
+      ],
       routeWhileDragging: true,
+      geocoder: L.Control.Geocoder.nominatim(),
       createMarker: function(i, waypoint, n) {
         if (i === 0) {
           // Starting point
@@ -65,14 +72,20 @@
       }
     }).addTo(map);
 
-    // Add click event to dynamically add waypoints
+    // Add a search bar to find places
+    L.Control.geocoder({
+      defaultMarkGeocode: false
+    }).on('markgeocode', function(e) {
+      var center = e.geocode.center;
+      map.setView(center, 14);
+      L.marker(center).addTo(map).bindPopup(e.geocode.name).openPopup();
+    }).addTo(map);
+
+    // Add click event to dynamically set the end point
     map.on('click', function(e) {
       var waypoints = control.getWaypoints();
-      if (!waypoints[0] || !waypoints[0].latLng) {
-        // Set as start point
-        control.spliceWaypoints(0, 1, e.latlng);
-      } else if (!waypoints[1] || !waypoints[1].latLng) {
-        // Set as end point
+      if (!waypoints[1] || !waypoints[1].latLng) {
+        // Set as end point (green marker)
         control.spliceWaypoints(waypoints.length, 0, e.latlng);
       }
     });
