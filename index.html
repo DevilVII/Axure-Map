@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaflet Map with Search, Routing, and Custom Markers</title>
+  <title>Leaflet Map with Dynamic Markers</title>
   <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-
-  <!-- Leaflet Search Plugin -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <!-- Leaflet Routing Machine -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
@@ -23,7 +19,7 @@
 <body>
   <div id="map"></div>
   <script>
-    // Initialize the map
+    // Initialize the map with a default location (London)
     var map = L.map('map').setView([51.505, -0.09], 13);
 
     // Add OpenStreetMap tiles
@@ -32,7 +28,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Define custom icons
+    // Define custom blue and green icons
     var blueIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
       iconSize: [25, 41],
@@ -51,37 +47,16 @@
       shadowSize: [41, 41]
     });
 
-    // Add a search bar
-    var geocoder = L.Control.geocoder({
-      defaultMarkGeocode: false
-    }).on('markgeocode', function(e) {
-      var bbox = e.geocode.bbox;
-      var poly = L.polygon([
-        [bbox.getSouthWest().lat, bbox.getSouthWest().lng],
-        [bbox.getSouthWest().lat, bbox.getNorthEast().lng],
-        [bbox.getNorthEast().lat, bbox.getNorthEast().lng],
-        [bbox.getNorthEast().lat, bbox.getSouthWest().lng]
-      ]);
-      map.fitBounds(poly.getBounds());
-      L.marker(e.geocode.center).addTo(map)
-        .bindPopup(e.geocode.name)
-        .openPopup();
-    }).addTo(map);
-
-    // Add routing control
+    // Add a routing control for directions
     var control = L.Routing.control({
-      waypoints: [
-        L.latLng(51.505, -0.09),
-        L.latLng(51.515, -0.1)
-      ],
+      waypoints: [], // Start with no waypoints
       routeWhileDragging: true,
-      geocoder: L.Control.Geocoder.nominatim(),
       createMarker: function(i, waypoint, n) {
         if (i === 0) {
-          // Start point
+          // Starting point
           return L.marker(waypoint.latLng, { icon: blueIcon }).bindPopup('Start');
         } else if (i === n - 1) {
-          // End point
+          // Ending point
           return L.marker(waypoint.latLng, { icon: greenIcon }).bindPopup('End');
         } else {
           // Intermediate points
@@ -90,13 +65,15 @@
       }
     }).addTo(map);
 
-    // Enable click-to-set waypoints
+    // Add click event to dynamically add waypoints
     map.on('click', function(e) {
       var waypoints = control.getWaypoints();
       if (!waypoints[0] || !waypoints[0].latLng) {
-        control.spliceWaypoints(0, 1, e.latlng); // Set as start point
-      } else {
-        control.spliceWaypoints(waypoints.length - 1, 1, e.latlng); // Set as end point
+        // Set as start point
+        control.spliceWaypoints(0, 1, e.latlng);
+      } else if (!waypoints[1] || !waypoints[1].latLng) {
+        // Set as end point
+        control.spliceWaypoints(waypoints.length, 0, e.latlng);
       }
     });
   </script>
